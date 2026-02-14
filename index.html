@@ -21,6 +21,7 @@
     --prod: #4caf78;
     --priv: #a06cd5;
     --danger: #d94a4a;
+    --success: #4caf78;
     --radius: 10px;
   }
 
@@ -38,12 +39,127 @@
     margin: 0 auto;
   }
 
-  h1 {
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  header h1 {
     font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 20px;
-    text-align: center;
     color: var(--text);
+  }
+
+  .btn-logout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-logout:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+
+  /* --- Auth Screen --- */
+  .auth-screen {
+    max-width: 380px;
+    margin: 60px auto;
+    text-align: center;
+  }
+
+  .auth-screen h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .auth-screen p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+  }
+
+  .auth-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .auth-form input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .auth-form input:focus {
+    border-color: var(--accent);
+  }
+
+  .auth-form .btn-auth {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .auth-form .btn-auth:active { opacity: 0.8; }
+  .auth-form .btn-auth:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .auth-toggle {
+    margin-top: 12px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  .auth-toggle a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .auth-toggle a:hover { text-decoration: underline; }
+
+  .forgot-link {
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: color 0.2s;
+  }
+
+  .forgot-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .auth-error {
+    color: var(--danger);
+    font-size: 0.85rem;
+    min-height: 1.2em;
   }
 
   /* --- Input Area --- */
@@ -131,6 +247,15 @@
     color: #fff;
   }
 
+  .filter-btn.done-filter {
+    margin-left: auto;
+  }
+
+  .filter-btn.done-filter.active {
+    background: var(--success);
+    border-color: var(--success);
+  }
+
   /* --- Task List --- */
   #task-list {
     display: flex;
@@ -164,6 +289,11 @@
     transform: scale(1.02);
   }
 
+  .task-item.done-item {
+    cursor: default;
+    opacity: 0.8;
+  }
+
   .drag-handle {
     color: var(--text-dim);
     font-size: 1.1rem;
@@ -192,6 +322,78 @@
     font-size: 0.95rem;
     line-height: 1.4;
     word-break: break-word;
+    cursor: text;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+
+  .task-text:hover {
+    background: var(--surface2);
+  }
+
+  .done-item .task-text {
+    cursor: default;
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  .done-item .task-text:hover {
+    background: transparent;
+  }
+
+  .task-edit-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: var(--text);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .done-date {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .btn-done {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .btn-done:hover, .btn-done:active {
+    color: var(--success);
+    background: rgba(76,175,120,0.12);
+  }
+
+  .btn-restore {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .btn-restore:hover {
+    color: var(--accent);
+    background: rgba(108,122,237,0.12);
   }
 
   .btn-delete {
@@ -262,40 +464,70 @@
     border-radius: 4px;
     font-size: 0.82rem;
   }
+
+  /* Hide app when not authed */
+  .app-content.hidden, .auth-screen.hidden {
+    display: none;
+  }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>Task Manager</h1>
 
-  <div id="config-banner" class="config-banner" style="display:none;">
-    Supabase nicht konfiguriert. Trage deine <code>SUPABASE_URL</code> und <code>SUPABASE_KEY</code> unten im Script ein.
-  </div>
-
-  <div class="input-area">
-    <div class="input-row">
-      <input type="text" id="task-input" placeholder="Neuer Task..." autocomplete="off">
-      <select id="category-select">
-        <option value="mgmt">Mgmt</option>
-        <option value="infra">Infra</option>
-        <option value="prod">Prod</option>
-        <option value="priv">Priv</option>
-      </select>
+  <!-- Auth Screen -->
+  <div class="auth-screen" id="auth-screen">
+    <h1>Task Manager</h1>
+    <p>Anmelden oder registrieren, um deine Tasks zu verwalten.</p>
+    <div class="auth-form" id="auth-form">
+      <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
+      <input type="password" id="auth-password" placeholder="Passwort" autocomplete="current-password">
+      <button class="btn-auth" id="btn-auth">Anmelden</button>
+      <div class="auth-error" id="auth-error"></div>
+      <a id="forgot-password-link" class="forgot-link">Passwort vergessen?</a>
+      <div class="auth-toggle">
+        <span id="auth-toggle-text">Noch kein Konto?</span>
+        <a id="auth-toggle-link">Registrieren</a>
+      </div>
     </div>
-    <button class="btn-add" id="btn-add">Hinzufügen</button>
   </div>
 
-  <div class="filter-bar">
-    <button class="filter-btn active" data-filter="all">Alle</button>
-    <button class="filter-btn" data-filter="mgmt">Mgmt</button>
-    <button class="filter-btn" data-filter="infra">Infra</button>
-    <button class="filter-btn" data-filter="prod">Prod</button>
-    <button class="filter-btn" data-filter="priv">Priv</button>
+  <!-- App Content (hidden until authed) -->
+  <div class="app-content hidden" id="app-content">
+    <header>
+      <h1>Task Manager</h1>
+      <button class="btn-logout" id="btn-logout">Logout</button>
+    </header>
+
+    <div id="config-banner" class="config-banner" style="display:none;">
+      Supabase nicht konfiguriert. Trage deine <code>SUPABASE_URL</code> und <code>SUPABASE_KEY</code> unten im Script ein.
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <input type="text" id="task-input" placeholder="Neuer Task..." autocomplete="off">
+        <select id="category-select">
+          <option value="mgmt">Mgmt</option>
+          <option value="infra">Infra</option>
+          <option value="prod">Prod</option>
+          <option value="priv">Priv</option>
+        </select>
+      </div>
+      <button class="btn-add" id="btn-add">Hinzufügen</button>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="all">Alle</button>
+      <button class="filter-btn" data-filter="mgmt">Mgmt</button>
+      <button class="filter-btn" data-filter="infra">Infra</button>
+      <button class="filter-btn" data-filter="prod">Prod</button>
+      <button class="filter-btn" data-filter="priv">Priv</button>
+      <button class="filter-btn done-filter" data-filter="done">Erledigt</button>
+    </div>
+
+    <div id="task-list"></div>
+
+    <div class="status" id="status"></div>
   </div>
-
-  <div id="task-list"></div>
-
-  <div class="status" id="status"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -313,11 +545,197 @@
 
   if (isConfigured) {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  } else {
-    document.getElementById('config-banner').style.display = 'block';
   }
 
-  // DOM
+  // --- Auth DOM ---
+  const authScreen = document.getElementById('auth-screen');
+  const appContent = document.getElementById('app-content');
+  const authEmail = document.getElementById('auth-email');
+  const authPassword = document.getElementById('auth-password');
+  const btnAuth = document.getElementById('btn-auth');
+  const authError = document.getElementById('auth-error');
+  const authToggleText = document.getElementById('auth-toggle-text');
+  const authToggleLink = document.getElementById('auth-toggle-link');
+  const btnLogout = document.getElementById('btn-logout');
+
+  const forgotLink = document.getElementById('forgot-password-link');
+
+  let isRegistering = false;
+  let isForgotMode = false;
+  let currentUser = null;
+
+  function updateAuthUI() {
+    authError.textContent = '';
+    authError.style.color = '';
+    if (isForgotMode) {
+      btnAuth.textContent = 'Link senden';
+      authPassword.style.display = 'none';
+      forgotLink.style.display = 'none';
+      authToggleText.textContent = 'Zurück zum';
+      authToggleLink.textContent = 'Login';
+    } else if (isRegistering) {
+      btnAuth.textContent = 'Registrieren';
+      authPassword.style.display = '';
+      forgotLink.style.display = 'none';
+      authToggleText.textContent = 'Schon ein Konto?';
+      authToggleLink.textContent = 'Anmelden';
+    } else {
+      btnAuth.textContent = 'Anmelden';
+      authPassword.style.display = '';
+      forgotLink.style.display = '';
+      authToggleText.textContent = 'Noch kein Konto?';
+      authToggleLink.textContent = 'Registrieren';
+    }
+  }
+
+  // --- Auth Toggle ---
+  authToggleLink.addEventListener('click', () => {
+    if (isForgotMode) {
+      isForgotMode = false;
+      isRegistering = false;
+    } else {
+      isRegistering = !isRegistering;
+    }
+    updateAuthUI();
+  });
+
+  // --- Forgot Password ---
+  forgotLink.addEventListener('click', () => {
+    isForgotMode = true;
+    isRegistering = false;
+    updateAuthUI();
+  });
+
+  // --- Auth Submit ---
+  btnAuth.addEventListener('click', handleAuth);
+  authPassword.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleAuth();
+  });
+  authEmail.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleAuth();
+  });
+
+  async function handleAuth() {
+    const email = authEmail.value.trim();
+    authError.textContent = '';
+    authError.style.color = '';
+
+    // --- Forgot Password Mode ---
+    if (isForgotMode) {
+      if (!email) {
+        authError.textContent = 'Bitte Email eingeben.';
+        return;
+      }
+      btnAuth.disabled = true;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
+      btnAuth.disabled = false;
+      if (error) {
+        authError.textContent = error.message;
+        return;
+      }
+      authError.style.color = 'var(--success)';
+      authError.textContent = 'Reset-Link gesendet! Bitte prüfe dein Postfach.';
+      return;
+    }
+
+    // --- Login / Register ---
+    const password = authPassword.value;
+
+    if (!email || !password) {
+      authError.textContent = 'Bitte Email und Passwort eingeben.';
+      return;
+    }
+
+    if (password.length < 6) {
+      authError.textContent = 'Passwort muss mindestens 6 Zeichen haben.';
+      return;
+    }
+
+    btnAuth.disabled = true;
+
+    let result;
+    if (isRegistering) {
+      result = await supabase.auth.signUp({ email, password });
+    } else {
+      result = await supabase.auth.signInWithPassword({ email, password });
+    }
+
+    btnAuth.disabled = false;
+
+    if (result.error) {
+      authError.textContent = result.error.message;
+      return;
+    }
+
+    if (isRegistering && result.data?.user && !result.data.session) {
+      authError.textContent = '';
+      authError.style.color = 'var(--success)';
+      authError.textContent = 'Bestätigungs-Email gesendet! Bitte prüfe dein Postfach.';
+      return;
+    }
+  }
+
+  // --- Logout ---
+  btnLogout.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+
+  // --- Auth State Change ---
+  function showApp(user) {
+    currentUser = user;
+    authScreen.classList.add('hidden');
+    appContent.classList.remove('hidden');
+    if (!isConfigured) {
+      document.getElementById('config-banner').style.display = 'block';
+    }
+    loadTasks();
+  }
+
+  function showAuth() {
+    currentUser = null;
+    appContent.classList.add('hidden');
+    authScreen.classList.remove('hidden');
+    tasks = [];
+  }
+
+  if (supabase) {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // User kam über den Reset-Link — neues Passwort setzen
+        const newPw = prompt('Neues Passwort eingeben (min. 6 Zeichen):');
+        if (newPw && newPw.length >= 6) {
+          supabase.auth.updateUser({ password: newPw }).then(({ error }) => {
+            if (error) {
+              alert('Fehler: ' + error.message);
+            } else {
+              alert('Passwort erfolgreich geändert!');
+            }
+          });
+        }
+      }
+      if (session?.user) {
+        showApp(session.user);
+      } else {
+        showAuth();
+      }
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        showApp(session.user);
+      } else {
+        showAuth();
+      }
+    });
+  } else {
+    // No supabase — show app in demo mode
+    showApp(null);
+  }
+
+  // --- App DOM ---
   const taskInput = document.getElementById('task-input');
   const categorySelect = document.getElementById('category-select');
   const btnAdd = document.getElementById('btn-add');
@@ -337,24 +755,48 @@
 
   // --- Render ---
   function render() {
-    const filtered = activeFilter === 'all'
-      ? tasks
-      : tasks.filter(t => t.category === activeFilter);
+    const showDone = activeFilter === 'done';
+
+    const filtered = tasks.filter(t => {
+      if (showDone) return t.done === true;
+      if (t.done) return false;
+      if (activeFilter === 'all') return true;
+      return t.category === activeFilter;
+    });
 
     if (filtered.length === 0) {
-      taskList.innerHTML = '<div class="empty-state">Keine Tasks vorhanden</div>';
+      const emptyMsg = showDone ? 'Keine erledigten Tasks' : 'Keine Tasks vorhanden';
+      taskList.innerHTML = '<div class="empty-state">' + emptyMsg + '</div>';
       initSortable();
       return;
     }
 
-    taskList.innerHTML = filtered.map(t => `
-      <div class="task-item" data-id="${t.id}">
-        <span class="drag-handle">&#x2630;</span>
-        <span class="badge badge-${t.category}">${t.category}</span>
-        <span class="task-text">${escapeHtml(t.text)}</span>
-        <button class="btn-delete" title="Löschen" data-id="${t.id}">&times;</button>
-      </div>
-    `).join('');
+    if (showDone) {
+      taskList.innerHTML = filtered.map(t => {
+        const doneDate = t.done_at ? new Date(t.done_at).toLocaleDateString('de-DE', {
+          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) : '';
+        return `
+          <div class="task-item done-item" data-id="${t.id}">
+            <span class="badge badge-${t.category}">${t.category}</span>
+            <span class="task-text">${escapeHtml(t.text)}</span>
+            <span class="done-date">${doneDate}</span>
+            <button class="btn-restore" title="Wiederherstellen" data-id="${t.id}">&#8634;</button>
+            <button class="btn-delete" title="Löschen" data-id="${t.id}">&times;</button>
+          </div>
+        `;
+      }).join('');
+    } else {
+      taskList.innerHTML = filtered.map(t => `
+        <div class="task-item" data-id="${t.id}">
+          <span class="drag-handle">&#x2630;</span>
+          <span class="badge badge-${t.category}">${t.category}</span>
+          <span class="task-text" data-id="${t.id}">${escapeHtml(t.text)}</span>
+          <button class="btn-done" title="Erledigt" data-id="${t.id}">&#10003;</button>
+          <button class="btn-delete" title="Löschen" data-id="${t.id}">&times;</button>
+        </div>
+      `).join('');
+    }
 
     initSortable();
   }
@@ -368,6 +810,7 @@
   // --- SortableJS ---
   function initSortable() {
     if (sortable) sortable.destroy();
+    if (activeFilter === 'done') return; // No sorting in done view
     sortable = new Sortable(taskList, {
       animation: 180,
       handle: '.task-item',
@@ -383,15 +826,12 @@
   async function handleReorder(evt) {
     if (evt.oldIndex === evt.newIndex) return;
 
-    // Rebuild order from DOM
     const items = taskList.querySelectorAll('.task-item');
     const orderedIds = Array.from(items).map(el => el.dataset.id);
 
-    // Update local tasks array order
     const taskMap = new Map(tasks.map(t => [t.id, t]));
     const reordered = orderedIds.map(id => taskMap.get(id)).filter(Boolean);
 
-    // Keep tasks not currently visible (filtered out) in their positions
     if (activeFilter !== 'all') {
       const otherTasks = tasks.filter(t => t.category !== activeFilter);
       tasks = [...reordered, ...otherTasks];
@@ -399,7 +839,6 @@
       tasks = reordered;
     }
 
-    // Assign new sort_order
     tasks.forEach((t, i) => t.sort_order = i);
 
     if (!supabase) return;
@@ -415,10 +854,77 @@
     }
   }
 
+  // --- Inline Edit ---
+  function startEdit(taskTextEl) {
+    const taskId = taskTextEl.dataset.id;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || task.done) return;
+
+    const currentText = task.text;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'task-edit-input';
+    input.value = currentText;
+
+    taskTextEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let saved = false;
+
+    async function save() {
+      if (saved) return;
+      saved = true;
+      const newText = input.value.trim();
+      if (!newText || newText === currentText) {
+        cancelEdit();
+        return;
+      }
+
+      task.text = newText;
+
+      const span = document.createElement('span');
+      span.className = 'task-text';
+      span.dataset.id = taskId;
+      span.textContent = newText;
+      input.replaceWith(span);
+
+      if (!supabase) return;
+
+      const { error } = await supabase.from('tasks').update({ text: newText }).eq('id', taskId);
+      if (error) {
+        setStatus('Fehler beim Speichern: ' + error.message, true);
+        task.text = currentText;
+        span.textContent = currentText;
+      } else {
+        setStatus('Task aktualisiert', false);
+      }
+    }
+
+    function cancelEdit() {
+      const span = document.createElement('span');
+      span.className = 'task-text';
+      span.dataset.id = taskId;
+      span.textContent = currentText;
+      input.replaceWith(span);
+    }
+
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        input.blur();
+      }
+      if (e.key === 'Escape') {
+        saved = true;
+        cancelEdit();
+      }
+    });
+  }
+
   // --- CRUD ---
   async function loadTasks() {
     if (!supabase) {
-      // Demo-Modus ohne Supabase
       tasks = [];
       render();
       return;
@@ -449,12 +955,13 @@
     const sort_order = tasks.length;
 
     if (!supabase) {
-      // Offline / Demo-Modus
       tasks.push({
         id: crypto.randomUUID(),
         text,
         category,
         sort_order,
+        done: false,
+        done_at: null,
         created_at: new Date().toISOString()
       });
       taskInput.value = '';
@@ -464,9 +971,16 @@
 
     btnAdd.disabled = true;
 
+    const insertData = {
+      text,
+      category,
+      sort_order,
+      user_id: currentUser.id
+    };
+
     const { data, error } = await supabase
       .from('tasks')
-      .insert({ text, category, sort_order })
+      .insert(insertData)
       .select()
       .single();
 
@@ -492,9 +1006,48 @@
     const { error } = await supabase.from('tasks').delete().eq('id', id);
     if (error) {
       setStatus('Fehler beim Löschen: ' + error.message, true);
-      loadTasks(); // Reload to sync
+      loadTasks();
     } else {
       setStatus('Task gelöscht', false);
+    }
+  }
+
+  async function markDone(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const now = new Date().toISOString();
+    task.done = true;
+    task.done_at = now;
+    render();
+
+    if (!supabase) return;
+
+    const { error } = await supabase.from('tasks').update({ done: true, done_at: now }).eq('id', id);
+    if (error) {
+      setStatus('Fehler beim Markieren: ' + error.message, true);
+      loadTasks();
+    } else {
+      setStatus('Task erledigt', false);
+    }
+  }
+
+  async function restoreTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    task.done = false;
+    task.done_at = null;
+    render();
+
+    if (!supabase) return;
+
+    const { error } = await supabase.from('tasks').update({ done: false, done_at: null }).eq('id', id);
+    if (error) {
+      setStatus('Fehler beim Wiederherstellen: ' + error.message, true);
+      loadTasks();
+    } else {
+      setStatus('Task wiederhergestellt', false);
     }
   }
 
@@ -506,8 +1059,24 @@
   });
 
   taskList.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-delete');
-    if (btn) deleteTask(btn.dataset.id);
+    // Delete
+    const btnDel = e.target.closest('.btn-delete');
+    if (btnDel) { deleteTask(btnDel.dataset.id); return; }
+
+    // Done
+    const btnDn = e.target.closest('.btn-done');
+    if (btnDn) { markDone(btnDn.dataset.id); return; }
+
+    // Restore
+    const btnRes = e.target.closest('.btn-restore');
+    if (btnRes) { restoreTask(btnRes.dataset.id); return; }
+
+    // Inline Edit
+    const taskText = e.target.closest('.task-text');
+    if (taskText && !taskText.closest('.done-item')) {
+      startEdit(taskText);
+      return;
+    }
   });
 
   filterBtns.forEach(btn => {
@@ -518,9 +1087,6 @@
       render();
     });
   });
-
-  // --- Init ---
-  loadTasks();
 })();
 </script>
 </body>
