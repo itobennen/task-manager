@@ -952,14 +952,16 @@
     if (!text) return;
 
     const category = categorySelect.value;
-    const sort_order = tasks.length;
+
+    // Alle bestehenden Tasks um 1 nach unten schieben
+    tasks.forEach(t => t.sort_order = (t.sort_order || 0) + 1);
 
     if (!supabase) {
-      tasks.push({
+      tasks.unshift({
         id: crypto.randomUUID(),
         text,
         category,
-        sort_order,
+        sort_order: 0,
         done: false,
         done_at: null,
         created_at: new Date().toISOString()
@@ -971,10 +973,15 @@
 
     btnAdd.disabled = true;
 
+    // sort_order der bestehenden Tasks in DB aktualisieren
+    for (const t of tasks) {
+      await supabase.from('tasks').update({ sort_order: t.sort_order }).eq('id', t.id);
+    }
+
     const insertData = {
       text,
       category,
-      sort_order,
+      sort_order: 0,
       user_id: currentUser.id
     };
 
@@ -988,10 +995,11 @@
 
     if (error) {
       setStatus('Fehler beim Erstellen: ' + error.message, true);
+      loadTasks();
       return;
     }
 
-    tasks.push(data);
+    tasks.unshift(data);
     taskInput.value = '';
     render();
     setStatus('Task hinzugefügt', false);
