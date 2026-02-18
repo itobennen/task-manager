@@ -16,10 +16,6 @@
       --text: #e4e6f0;
       --text-dim: #8b8fa3;
       --accent: #6c7aed;
-      --mgmt: #4a90d9;
-      --infra: #e08a3c;
-      --prod: #4caf78;
-      --priv: #a06cd5;
       --danger: #d94a4a;
       --success: #4caf78;
       --radius: 10px;
@@ -126,10 +122,6 @@
       font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
       padding: 3px 8px; border-radius: 5px; flex-shrink: 0; color: #fff;
     }
-    .badge-mgmt { background: var(--mgmt); }
-    .badge-infra { background: var(--infra); }
-    .badge-prod { background: var(--prod); }
-    .badge-priv { background: var(--priv); }
     .task-text {
       flex: 1; font-size: 0.95rem; line-height: 1.4; word-break: break-word;
       cursor: text; padding: 2px 4px; border-radius: 4px; transition: background 0.15s;
@@ -232,15 +224,24 @@
     }
     .cat-list { display: flex; flex-direction: column; gap: 6px; }
     .cat-item {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; gap: 8px;
       background: var(--surface2); border: 1px solid var(--border);
       border-radius: 8px; padding: 8px 12px;
     }
     .cat-item-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
     .cat-item-name { flex: 1; font-size: 0.9rem; }
+    .cat-item-edit-input {
+      flex: 1; background: var(--bg); border: 1px solid var(--accent); border-radius: 6px;
+      padding: 2px 8px; color: var(--text); font-size: 0.9rem; outline: none; font-family: inherit;
+    }
+    .btn-cat-rename {
+      background: none; border: none; color: var(--text-dim); font-size: 0.85rem;
+      cursor: pointer; padding: 4px; border-radius: 4px; transition: color 0.2s; line-height: 1; flex-shrink: 0;
+    }
+    .btn-cat-rename:hover { color: var(--accent); }
     .btn-cat-delete {
       background: none; border: none; color: var(--text-dim); font-size: 1.1rem;
-      cursor: pointer; padding: 4px; border-radius: 4px; transition: color 0.2s; line-height: 1;
+      cursor: pointer; padding: 4px; border-radius: 4px; transition: color 0.2s; line-height: 1; flex-shrink: 0;
     }
     .btn-cat-delete:hover { color: var(--danger); }
     .cat-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
@@ -309,7 +310,7 @@
       <button class="btn-cat-add" id="btn-add-cat">Kategorie hinzufügen</button>
     </div>
     <hr class="cat-divider">
-    <div class="cat-list-label">Eigene Kategorien</div>
+    <div class="cat-list-label">Alle Kategorien</div>
     <div class="cat-list" id="cat-list"></div>
   </div>
 </div>
@@ -325,8 +326,8 @@
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   }
 
-  // Default categories
-  const DEFAULT_CATEGORIES = [
+  // Seed data: inserted once per user if categories table is empty
+  const SEED_CATEGORIES = [
     { key: 'mgmt', name: 'Mgmt',  color: '#4a90d9' },
     { key: 'infra', name: 'Infra', color: '#e08a3c' },
     { key: 'prod',  name: 'Prod',  color: '#4caf78' },
@@ -339,34 +340,27 @@
     '#e06c75','#56b6c2','#c678dd','#98c379',
   ];
 
-  let customCategories = [];
+  // All categories for the current user (loaded from Supabase)
+  let categories = [];
   let selectedColor = PRESET_COLORS[5];
 
-  function getAllCategories() {
-    return [...DEFAULT_CATEGORIES, ...customCategories];
-  }
-
   function getCategoryColor(key) {
-    const cat = getAllCategories().find(c => c.key === key);
+    const cat = categories.find(c => c.key === key);
     return cat ? cat.color : '#888888';
   }
 
   function getCategoryName(key) {
-    const cat = getAllCategories().find(c => c.key === key);
+    const cat = categories.find(c => c.key === key);
     return cat ? cat.name : key;
   }
 
   function getBadgeHtml(categoryKey) {
-    const isDefault = DEFAULT_CATEGORIES.some(c => c.key === categoryKey);
-    const name = getCategoryName(categoryKey);
-    if (isDefault) {
-      return `<span class="badge badge-${categoryKey}">${escapeHtml(name)}</span>`;
-    }
     const color = getCategoryColor(categoryKey);
+    const name  = getCategoryName(categoryKey);
     return `<span class="badge" style="background:${color}">${escapeHtml(name)}</span>`;
   }
 
-  // Auth DOM
+  // ── Auth DOM ──
   const authScreen   = document.getElementById('auth-screen');
   const appContent   = document.getElementById('app-content');
   const authEmail    = document.getElementById('auth-email');
@@ -475,7 +469,7 @@
     appContent.classList.add('hidden');
     authScreen.classList.remove('hidden');
     tasks = [];
-    customCategories = [];
+    categories = [];
   }
 
   if (supabase) {
@@ -498,7 +492,7 @@
     showApp(null);
   }
 
-  // App DOM
+  // ── App DOM ──
   const taskInput      = document.getElementById('task-input');
   const categorySelect = document.getElementById('category-select');
   const btnAdd         = document.getElementById('btn-add');
@@ -515,12 +509,10 @@
     statusEl.innerHTML = msg;
   }
 
-  // Filter bar (dynamic)
   function renderFilterBar() {
-    const allCats = getAllCategories();
     filterBar.innerHTML =
       `<button class="filter-btn ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">Alle</button>` +
-      allCats.map(cat =>
+      categories.map(cat =>
         `<button class="filter-btn ${activeFilter === cat.key ? 'active' : ''}" data-filter="${cat.key}">${escapeHtml(cat.name)}</button>`
       ).join('') +
       `<button class="filter-btn done-filter ${activeFilter === 'done' ? 'active' : ''}" data-filter="done">Erledigt</button>`;
@@ -535,35 +527,54 @@
     });
   }
 
-  // Category select (dynamic)
   function renderCategorySelect() {
-    const allCats    = getAllCategories();
     const currentVal = categorySelect.value;
-    categorySelect.innerHTML = allCats.map(cat =>
+    categorySelect.innerHTML = categories.map(cat =>
       `<option value="${cat.key}">${escapeHtml(cat.name)}</option>`
     ).join('');
-    if (allCats.find(c => c.key === currentVal)) {
+    if (categories.find(c => c.key === currentVal)) {
       categorySelect.value = currentVal;
     }
   }
 
-  // Load custom categories from Supabase
+  // Load categories — seed defaults if table is empty for this user
   async function loadCategories() {
     if (!supabase || !currentUser) {
+      categories = SEED_CATEGORIES.map((c, i) => ({ ...c, id: 'default_' + i }));
       renderFilterBar();
       renderCategorySelect();
       return;
     }
+
     const { data, error } = await supabase
       .from('categories')
       .select('*')
       .order('created_at', { ascending: true });
-    if (!error) customCategories = data || [];
+
+    if (error) {
+      categories = SEED_CATEGORIES.map((c, i) => ({ ...c, id: 'default_' + i }));
+      renderFilterBar();
+      renderCategorySelect();
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      // Seed defaults for this user
+      const seeds = SEED_CATEGORIES.map(c => ({ ...c, user_id: currentUser.id }));
+      const { data: inserted } = await supabase
+        .from('categories')
+        .insert(seeds)
+        .select();
+      categories = inserted || seeds.map((c, i) => ({ ...c, id: 'default_' + i }));
+    } else {
+      categories = data;
+    }
+
     renderFilterBar();
     renderCategorySelect();
   }
 
-  // Category Modal
+  // ── Category Modal ──
   const modalOverlay = document.getElementById('cat-modal');
   const btnOpenCat   = document.getElementById('btn-categories');
   const btnCloseCat  = document.getElementById('btn-cat-modal-close');
@@ -591,9 +602,7 @@
     const container = document.getElementById('color-swatches');
     container.innerHTML = PRESET_COLORS.map(color =>
       `<div class="color-swatch ${color === selectedColor ? 'selected' : ''}"
-            data-color="${color}"
-            style="background:${color}"
-            title="${color}"></div>`
+            data-color="${color}" style="background:${color}" title="${color}"></div>`
     ).join('');
     container.querySelectorAll('.color-swatch').forEach(swatch => {
       swatch.addEventListener('click', () => {
@@ -605,19 +614,79 @@
   }
 
   function renderCatList() {
-    if (customCategories.length === 0) {
-      catListEl.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem">Noch keine eigenen Kategorien.</div>';
+    if (categories.length === 0) {
+      catListEl.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem">Keine Kategorien vorhanden.</div>';
       return;
     }
-    catListEl.innerHTML = customCategories.map(cat => `
+    catListEl.innerHTML = categories.map(cat => `
       <div class="cat-item" data-id="${cat.id}">
         <div class="cat-item-dot" style="background:${cat.color}"></div>
         <span class="cat-item-name">${escapeHtml(cat.name)}</span>
+        <button class="btn-cat-rename" title="Umbenennen" data-id="${cat.id}">✏</button>
         <button class="btn-cat-delete" title="Löschen" data-id="${cat.id}">&times;</button>
       </div>
     `).join('');
+
+    catListEl.querySelectorAll('.btn-cat-rename').forEach(btn => {
+      btn.addEventListener('click', () => startRenameCategory(btn.dataset.id));
+    });
     catListEl.querySelectorAll('.btn-cat-delete').forEach(btn => {
       btn.addEventListener('click', () => deleteCategory(btn.dataset.id));
+    });
+  }
+
+  function startRenameCategory(id) {
+    const cat = categories.find(c => c.id === id);
+    if (!cat) return;
+
+    const item = catListEl.querySelector(`.cat-item[data-id="${id}"]`);
+    if (!item) return;
+
+    const nameSpan = item.querySelector('.cat-item-name');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'cat-item-edit-input';
+    input.value = cat.name;
+    nameSpan.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let saved = false;
+
+    async function save() {
+      if (saved) return;
+      saved = true;
+      const newName = input.value.trim();
+      if (!newName || newName === cat.name) { cancelRename(); return; }
+
+      cat.name = newName;
+      const span = document.createElement('span');
+      span.className = 'cat-item-name';
+      span.textContent = newName;
+      input.replaceWith(span);
+
+      renderFilterBar();
+      renderCategorySelect();
+      render();
+
+      if (!supabase || id.startsWith('default_')) return;
+      const { error } = await supabase.from('categories').update({ name: newName }).eq('id', id);
+      if (error) {
+        catError.textContent = 'Fehler beim Umbenennen: ' + error.message;
+      }
+    }
+
+    function cancelRename() {
+      const span = document.createElement('span');
+      span.className = 'cat-item-name';
+      span.textContent = cat.name;
+      input.replaceWith(span);
+    }
+
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { saved = true; cancelRename(); }
     });
   }
 
@@ -629,14 +698,14 @@
     let key = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
     if (!key) { catError.textContent = 'Ungültiger Name (nur Buchstaben, Zahlen, Leerzeichen).'; return; }
 
-    if (getAllCategories().find(c => c.key === key)) {
+    if (categories.find(c => c.key === key)) {
       key = key + '_' + Date.now().toString(36);
     }
 
     btnAddCat.disabled = true;
 
     if (!supabase) {
-      customCategories.push({ id: crypto.randomUUID(), name, key, color: selectedColor });
+      categories.push({ id: crypto.randomUUID(), name, key, color: selectedColor });
       catNameInput.value = '';
       renderCatModal();
       renderFilterBar();
@@ -653,7 +722,7 @@
     btnAddCat.disabled = false;
 
     if (error) { catError.textContent = 'Fehler: ' + error.message; return; }
-    customCategories.push(data);
+    categories.push(data);
     catNameInput.value = '';
     renderCatModal();
     renderFilterBar();
@@ -661,20 +730,20 @@
   }
 
   async function deleteCategory(id) {
-    const cat = customCategories.find(c => c.id === id);
+    const cat = categories.find(c => c.id === id);
     if (!cat) return;
 
-    customCategories = customCategories.filter(c => c.id !== id);
+    categories = categories.filter(c => c.id !== id);
     if (activeFilter === cat.key) activeFilter = 'all';
 
     renderCatModal();
     renderFilterBar();
     renderCategorySelect();
 
-    if (!supabase) return;
+    if (!supabase || id.startsWith('default_')) return;
     const { error } = await supabase.from('categories').delete().eq('id', id);
     if (error) {
-      customCategories.push(cat);
+      categories.push(cat);
       catError.textContent = 'Fehler beim Löschen: ' + error.message;
       renderCatModal();
       renderFilterBar();
@@ -685,7 +754,7 @@
   btnAddCat.addEventListener('click', addCategory);
   catNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addCategory(); });
 
-  // Task rendering
+  // ── Task rendering ──
   function render() {
     const showDone = activeFilter === 'done';
     const filtered = tasks.filter(t => {
