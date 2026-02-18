@@ -1,568 +1,386 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>Task Manager</title>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242834;
+      --border: #2e3345;
+      --text: #e4e6f0;
+      --text-dim: #8b8fa3;
+      --accent: #6c7aed;
+      --mgmt: #4a90d9;
+      --infra: #e08a3c;
+      --prod: #4caf78;
+      --priv: #a06cd5;
+      --danger: #d94a4a;
+      --success: #4caf78;
+      --radius: 10px;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding: 16px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .container { max-width: 540px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    header h1 { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .header-btns { display: flex; gap: 8px; }
+    .btn-logout {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 14px; color: var(--text-dim); font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-logout:hover { color: var(--danger); border-color: var(--danger); }
+    .btn-categories {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 14px; color: var(--text-dim); font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-categories:hover { color: var(--accent); border-color: var(--accent); }
 
-  :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --surface2: #242834;
-    --border: #2e3345;
-    --text: #e4e6f0;
-    --text-dim: #8b8fa3;
-    --accent: #6c7aed;
-    --mgmt: #4a90d9;
-    --infra: #e08a3c;
-    --prod: #4caf78;
-    --priv: #a06cd5;
-    --danger: #d94a4a;
-    --success: #4caf78;
-    --radius: 10px;
-  }
+    /* Auth Screen */
+    .auth-screen { max-width: 380px; margin: 60px auto; text-align: center; }
+    .auth-screen h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+    .auth-screen p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 24px; }
+    .auth-form {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .auth-form input {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px 14px; color: var(--text); font-size: 1rem; outline: none;
+      transition: border-color 0.2s; width: 100%;
+    }
+    .auth-form input:focus { border-color: var(--accent); }
+    .auth-form .btn-auth {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+    }
+    .auth-form .btn-auth:active { opacity: 0.8; }
+    .auth-form .btn-auth:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auth-toggle { margin-top: 12px; color: var(--text-dim); font-size: 0.85rem; }
+    .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
+    .auth-toggle a:hover { text-decoration: underline; }
+    .forgot-link {
+      color: var(--text-dim); font-size: 0.82rem; cursor: pointer; text-decoration: none;
+      text-align: center; transition: color 0.2s;
+    }
+    .forgot-link:hover { color: var(--accent); text-decoration: underline; }
+    .auth-error { color: var(--danger); font-size: 0.85rem; min-height: 1.2em; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100dvh;
-    padding: 16px;
-    -webkit-tap-highlight-color: transparent;
-  }
+    /* Input Area */
+    .input-area {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .input-row { display: flex; gap: 8px; }
+    .input-area input[type="text"] {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; color: var(--text); font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    .input-area input[type="text"]:focus { border-color: var(--accent); }
+    .input-area select {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; color: var(--text); font-size: 0.9rem; outline: none;
+      cursor: pointer; -webkit-appearance: none;
+    }
+    .btn-add {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 10px 18px; font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s; white-space: nowrap;
+    }
+    .btn-add:active { opacity: 0.8; }
 
-  .container {
-    max-width: 540px;
-    margin: 0 auto;
-  }
+    /* Filter */
+    .filter-bar { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .filter-btn {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 6px 14px; color: var(--text-dim); font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+    }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .filter-btn.done-filter { margin-left: auto; }
+    .filter-btn.done-filter.active { background: var(--success); border-color: var(--success); }
 
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
+    /* Task List */
+    #task-list { display: flex; flex-direction: column; gap: 6px; min-height: 60px; }
+    .task-item {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+      cursor: grab; transition: transform 0.15s, box-shadow 0.15s; touch-action: manipulation;
+    }
+    .task-item:active { cursor: grabbing; }
+    .task-item.sortable-ghost { opacity: 0.4; transform: scale(0.97); }
+    .task-item.sortable-drag { box-shadow: 0 8px 24px rgba(0,0,0,0.4); transform: scale(1.02); }
+    .task-item.done-item { cursor: default; opacity: 0.8; }
+    .drag-handle { color: var(--text-dim); font-size: 1.1rem; flex-shrink: 0; user-select: none; }
+    .badge {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 3px 8px; border-radius: 5px; flex-shrink: 0; color: #fff;
+    }
+    .badge-mgmt { background: var(--mgmt); }
+    .badge-infra { background: var(--infra); }
+    .badge-prod { background: var(--prod); }
+    .badge-priv { background: var(--priv); }
+    .task-text {
+      flex: 1; font-size: 0.95rem; line-height: 1.4; word-break: break-word;
+      cursor: text; padding: 2px 4px; border-radius: 4px; transition: background 0.15s;
+    }
+    .task-text:hover { background: var(--surface2); }
+    .done-item .task-text { cursor: default; text-decoration: line-through; opacity: 0.7; }
+    .done-item .task-text:hover { background: transparent; }
+    .task-edit-input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--accent); border-radius: 6px;
+      padding: 4px 8px; color: var(--text); font-size: 0.95rem; line-height: 1.4;
+      outline: none; font-family: inherit;
+    }
+    .done-date { color: var(--text-dim); font-size: 0.75rem; white-space: nowrap; flex-shrink: 0; }
+    .btn-done {
+      background: none; border: none; color: var(--text-dim); font-size: 1.1rem;
+      cursor: pointer; padding: 4px; border-radius: 6px;
+      transition: color 0.2s, background 0.2s; flex-shrink: 0;
+    }
+    .btn-done:hover, .btn-done:active { color: var(--success); background: rgba(76,175,120,0.12); }
+    .btn-restore {
+      background: none; border: none; color: var(--text-dim); font-size: 0.85rem;
+      cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s, background 0.2s; flex-shrink: 0;
+    }
+    .btn-restore:hover { color: var(--accent); background: rgba(108,122,237,0.12); }
+    .btn-delete {
+      background: none; border: none; color: var(--text-dim); font-size: 1.1rem;
+      cursor: pointer; padding: 4px; border-radius: 6px;
+      transition: color 0.2s, background 0.2s; flex-shrink: 0;
+    }
+    .btn-delete:hover, .btn-delete:active { color: var(--danger); background: rgba(217,74,74,0.12); }
+    .empty-state { text-align: center; color: var(--text-dim); padding: 40px 0; font-size: 0.95rem; }
 
-  header h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text);
-  }
+    /* Status */
+    .status { text-align: center; color: var(--text-dim); font-size: 0.8rem; margin-top: 16px; min-height: 1.2em; }
+    .status.error { color: var(--danger); }
 
-  .btn-logout {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 14px;
-    color: var(--text-dim);
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+    /* Spinner */
+    .spinner {
+      display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-  .btn-logout:hover {
-    color: var(--danger);
-    border-color: var(--danger);
-  }
+    /* Config Banner */
+    .config-banner {
+      background: #2a1f0e; border: 1px solid #5a4020; border-radius: var(--radius);
+      padding: 14px; margin-bottom: 16px; font-size: 0.88rem; line-height: 1.5; color: #e0c080;
+    }
+    .config-banner code { background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 4px; font-size: 0.82rem; }
 
-  /* --- Auth Screen --- */
-  .auth-screen {
-    max-width: 380px;
-    margin: 60px auto;
-    text-align: center;
-  }
+    .app-content.hidden, .auth-screen.hidden { display: none; }
 
-  .auth-screen h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-
-  .auth-screen p {
-    color: var(--text-dim);
-    font-size: 0.9rem;
-    margin-bottom: 24px;
-  }
-
-  .auth-form {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .auth-form input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    color: var(--text);
-    font-size: 1rem;
-    outline: none;
-    transition: border-color 0.2s;
-    width: 100%;
-  }
-
-  .auth-form input:focus {
-    border-color: var(--accent);
-  }
-
-  .auth-form .btn-auth {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-
-  .auth-form .btn-auth:active { opacity: 0.8; }
-  .auth-form .btn-auth:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .auth-toggle {
-    margin-top: 12px;
-    color: var(--text-dim);
-    font-size: 0.85rem;
-  }
-
-  .auth-toggle a {
-    color: var(--accent);
-    cursor: pointer;
-    text-decoration: none;
-  }
-
-  .auth-toggle a:hover { text-decoration: underline; }
-
-  .forgot-link {
-    color: var(--text-dim);
-    font-size: 0.82rem;
-    cursor: pointer;
-    text-decoration: none;
-    text-align: center;
-    transition: color 0.2s;
-  }
-
-  .forgot-link:hover {
-    color: var(--accent);
-    text-decoration: underline;
-  }
-
-  .auth-error {
-    color: var(--danger);
-    font-size: 0.85rem;
-    min-height: 1.2em;
-  }
-
-  /* --- Input Area --- */
-  .input-area {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    margin-bottom: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .input-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .input-area input[type="text"] {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: var(--text);
-    font-size: 1rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .input-area input[type="text"]:focus {
-    border-color: var(--accent);
-  }
-
-  .input-area select {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: var(--text);
-    font-size: 0.9rem;
-    outline: none;
-    cursor: pointer;
-    -webkit-appearance: none;
-  }
-
-  .btn-add {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 18px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    white-space: nowrap;
-  }
-
-  .btn-add:active { opacity: 0.8; }
-
-  /* --- Filter --- */
-  .filter-bar {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-  }
-
-  .filter-btn {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 6px 14px;
-    color: var(--text-dim);
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .filter-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-
-  .filter-btn.done-filter {
-    margin-left: auto;
-  }
-
-  .filter-btn.done-filter.active {
-    background: var(--success);
-    border-color: var(--success);
-  }
-
-  /* --- Task List --- */
-  #task-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-height: 60px;
-  }
-
-  .task-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: grab;
-    transition: transform 0.15s, box-shadow 0.15s;
-    touch-action: manipulation;
-  }
-
-  .task-item:active { cursor: grabbing; }
-
-  .task-item.sortable-ghost {
-    opacity: 0.4;
-    transform: scale(0.97);
-  }
-
-  .task-item.sortable-drag {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    transform: scale(1.02);
-  }
-
-  .task-item.done-item {
-    cursor: default;
-    opacity: 0.8;
-  }
-
-  .drag-handle {
-    color: var(--text-dim);
-    font-size: 1.1rem;
-    flex-shrink: 0;
-    user-select: none;
-  }
-
-  .badge {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 3px 8px;
-    border-radius: 5px;
-    flex-shrink: 0;
-    color: #fff;
-  }
-
-  .badge-mgmt  { background: var(--mgmt); }
-  .badge-infra { background: var(--infra); }
-  .badge-prod  { background: var(--prod); }
-  .badge-priv  { background: var(--priv); }
-
-  .task-text {
-    flex: 1;
-    font-size: 0.95rem;
-    line-height: 1.4;
-    word-break: break-word;
-    cursor: text;
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: background 0.15s;
-  }
-
-  .task-text:hover {
-    background: var(--surface2);
-  }
-
-  .done-item .task-text {
-    cursor: default;
-    text-decoration: line-through;
-    opacity: 0.7;
-  }
-
-  .done-item .task-text:hover {
-    background: transparent;
-  }
-
-  .task-edit-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--accent);
-    border-radius: 6px;
-    padding: 4px 8px;
-    color: var(--text);
-    font-size: 0.95rem;
-    line-height: 1.4;
-    outline: none;
-    font-family: inherit;
-  }
-
-  .done-date {
-    color: var(--text-dim);
-    font-size: 0.75rem;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .btn-done {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 6px;
-    transition: color 0.2s, background 0.2s;
-    flex-shrink: 0;
-  }
-
-  .btn-done:hover, .btn-done:active {
-    color: var(--success);
-    background: rgba(76,175,120,0.12);
-  }
-
-  .btn-restore {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-size: 0.85rem;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: color 0.2s, background 0.2s;
-    flex-shrink: 0;
-  }
-
-  .btn-restore:hover {
-    color: var(--accent);
-    background: rgba(108,122,237,0.12);
-  }
-
-  .btn-delete {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 6px;
-    transition: color 0.2s, background 0.2s;
-    flex-shrink: 0;
-  }
-
-  .btn-delete:hover, .btn-delete:active {
-    color: var(--danger);
-    background: rgba(217,74,74,0.12);
-  }
-
-  .empty-state {
-    text-align: center;
-    color: var(--text-dim);
-    padding: 40px 0;
-    font-size: 0.95rem;
-  }
-
-  /* --- Status --- */
-  .status {
-    text-align: center;
-    color: var(--text-dim);
-    font-size: 0.8rem;
-    margin-top: 16px;
-    min-height: 1.2em;
-  }
-
-  .status.error { color: var(--danger); }
-
-  /* --- Loading Spinner --- */
-  .spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    vertical-align: middle;
-    margin-right: 6px;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* --- Config Banner --- */
-  .config-banner {
-    background: #2a1f0e;
-    border: 1px solid #5a4020;
-    border-radius: var(--radius);
-    padding: 14px;
-    margin-bottom: 16px;
-    font-size: 0.88rem;
-    line-height: 1.5;
-    color: #e0c080;
-  }
-
-  .config-banner code {
-    background: rgba(0,0,0,0.3);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.82rem;
-  }
-
-  /* Hide app when not authed */
-  .app-content.hidden, .auth-screen.hidden {
-    display: none;
-  }
-</style>
+    /* Category Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 16px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      width: 100%; max-width: 380px; max-height: 80vh; overflow-y: auto;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .btn-modal-close {
+      background: none; border: none; color: var(--text-dim); font-size: 1.4rem;
+      cursor: pointer; padding: 2px 8px; border-radius: 6px; transition: color 0.2s; line-height: 1;
+    }
+    .btn-modal-close:hover { color: var(--text); }
+    .cat-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .cat-form input[type="text"] {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; color: var(--text); font-size: 0.95rem; outline: none;
+      transition: border-color 0.2s; width: 100%;
+    }
+    .cat-form input[type="text"]:focus { border-color: var(--accent); }
+    .color-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+    .color-swatch {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s; flex-shrink: 0;
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected { border-color: #fff; transform: scale(1.15); }
+    .btn-cat-add {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s; width: 100%;
+    }
+    .btn-cat-add:active { opacity: 0.8; }
+    .btn-cat-add:disabled { opacity: 0.5; cursor: not-allowed; }
+    .cat-error { color: var(--danger); font-size: 0.82rem; min-height: 1.2em; }
+    .cat-list-label {
+      font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 8px;
+    }
+    .cat-list { display: flex; flex-direction: column; gap: 6px; }
+    .cat-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 12px;
+    }
+    .cat-item-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .cat-item-name { flex: 1; font-size: 0.9rem; }
+    .btn-cat-delete {
+      background: none; border: none; color: var(--text-dim); font-size: 1.1rem;
+      cursor: pointer; padding: 4px; border-radius: 4px; transition: color 0.2s; line-height: 1;
+    }
+    .btn-cat-delete:hover { color: var(--danger); }
+    .cat-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  </style>
 </head>
 <body>
-<div class="container">
 
-  <!-- Auth Screen -->
-  <div class="auth-screen" id="auth-screen">
-    <h1>Task Manager</h1>
-    <p>Anmelden oder registrieren, um deine Tasks zu verwalten.</p>
-    <div class="auth-form" id="auth-form">
-      <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
-      <input type="password" id="auth-password" placeholder="Passwort" autocomplete="current-password">
-      <button class="btn-auth" id="btn-auth">Anmelden</button>
-      <div class="auth-error" id="auth-error"></div>
-      <a id="forgot-password-link" class="forgot-link">Passwort vergessen?</a>
-      <div class="auth-toggle">
-        <span id="auth-toggle-text">Noch kein Konto?</span>
-        <a id="auth-toggle-link">Registrieren</a>
-      </div>
-    </div>
+<!-- Auth Screen -->
+<div class="auth-screen" id="auth-screen">
+  <h1>Task Manager</h1>
+  <p>Anmelden oder registrieren, um deine Tasks zu verwalten.</p>
+  <div class="auth-form">
+    <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
+    <input type="password" id="auth-password" placeholder="Passwort" autocomplete="current-password">
+    <div class="auth-error" id="auth-error"></div>
+    <button class="btn-auth" id="btn-auth">Anmelden</button>
+    <a class="forgot-link" id="forgot-password-link">Passwort vergessen?</a>
   </div>
+  <div class="auth-toggle">
+    <span id="auth-toggle-text">Noch kein Konto?</span>
+    <a id="auth-toggle-link">Registrieren</a>
+  </div>
+</div>
 
-  <!-- App Content (hidden until authed) -->
-  <div class="app-content hidden" id="app-content">
+<!-- App Content -->
+<div class="app-content hidden" id="app-content">
+  <div class="container">
     <header>
       <h1>Task Manager</h1>
-      <button class="btn-logout" id="btn-logout">Logout</button>
+      <div class="header-btns">
+        <button class="btn-categories" id="btn-categories">Kategorien</button>
+        <button class="btn-logout" id="btn-logout">Logout</button>
+      </div>
     </header>
 
-    <div id="config-banner" class="config-banner" style="display:none;">
+    <div class="config-banner" id="config-banner" style="display:none;">
       Supabase nicht konfiguriert. Trage deine <code>SUPABASE_URL</code> und <code>SUPABASE_KEY</code> unten im Script ein.
     </div>
 
     <div class="input-area">
       <div class="input-row">
-        <input type="text" id="task-input" placeholder="Neuer Task..." autocomplete="off">
-        <select id="category-select">
-          <option value="mgmt">Mgmt</option>
-          <option value="infra">Infra</option>
-          <option value="prod">Prod</option>
-          <option value="priv">Priv</option>
-        </select>
+        <input type="text" id="task-input" placeholder="Neue Aufgabe...">
+        <select id="category-select"></select>
+        <button class="btn-add" id="btn-add">Hinzufügen</button>
       </div>
-      <button class="btn-add" id="btn-add">Hinzufügen</button>
     </div>
 
-    <div class="filter-bar">
-      <button class="filter-btn active" data-filter="all">Alle</button>
-      <button class="filter-btn" data-filter="mgmt">Mgmt</button>
-      <button class="filter-btn" data-filter="infra">Infra</button>
-      <button class="filter-btn" data-filter="prod">Prod</button>
-      <button class="filter-btn" data-filter="priv">Priv</button>
-      <button class="filter-btn done-filter" data-filter="done">Erledigt</button>
-    </div>
+    <div class="filter-bar" id="filter-bar"></div>
 
     <div id="task-list"></div>
-
     <div class="status" id="status"></div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- Category Modal -->
+<div class="modal-overlay hidden" id="cat-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Kategorien verwalten</h2>
+      <button class="btn-modal-close" id="btn-cat-modal-close">&times;</button>
+    </div>
+    <div class="cat-form">
+      <input type="text" id="cat-name-input" placeholder="Name der neuen Kategorie...">
+      <div class="color-swatches" id="color-swatches"></div>
+      <div class="cat-error" id="cat-error"></div>
+      <button class="btn-cat-add" id="btn-add-cat">Kategorie hinzufügen</button>
+    </div>
+    <hr class="cat-divider">
+    <div class="cat-list-label">Eigene Kategorien</div>
+    <div class="cat-list" id="cat-list"></div>
+  </div>
+</div>
+
 <script>
 (function() {
-  // ============================================================
-  // SUPABASE CONFIG — hier eigene Werte eintragen:
   const SUPABASE_URL = 'https://xuhbqvymuicagmojfpvz.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1aGJxdnltdWljYWdtb2pmcHZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwODE1OTksImV4cCI6MjA4NjY1NzU5OX0.DtHjeXyq1VtW-GiMJdoqutVv5uSsQOXnpkzWZ-ZLu_o';
-  // ============================================================
 
   const isConfigured = SUPABASE_URL.startsWith('https://');
   let supabase = null;
-
   if (isConfigured) {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   }
 
-  // --- Auth DOM ---
-  const authScreen = document.getElementById('auth-screen');
-  const appContent = document.getElementById('app-content');
-  const authEmail = document.getElementById('auth-email');
+  // Default categories
+  const DEFAULT_CATEGORIES = [
+    { key: 'mgmt', name: 'Mgmt',  color: '#4a90d9' },
+    { key: 'infra', name: 'Infra', color: '#e08a3c' },
+    { key: 'prod',  name: 'Prod',  color: '#4caf78' },
+    { key: 'priv',  name: 'Priv',  color: '#a06cd5' },
+  ];
+
+  const PRESET_COLORS = [
+    '#4a90d9','#e08a3c','#4caf78','#a06cd5',
+    '#d94a4a','#6c7aed','#3cbfcf','#d9b44a',
+    '#e06c75','#56b6c2','#c678dd','#98c379',
+  ];
+
+  let customCategories = [];
+  let selectedColor = PRESET_COLORS[5];
+
+  function getAllCategories() {
+    return [...DEFAULT_CATEGORIES, ...customCategories];
+  }
+
+  function getCategoryColor(key) {
+    const cat = getAllCategories().find(c => c.key === key);
+    return cat ? cat.color : '#888888';
+  }
+
+  function getCategoryName(key) {
+    const cat = getAllCategories().find(c => c.key === key);
+    return cat ? cat.name : key;
+  }
+
+  function getBadgeHtml(categoryKey) {
+    const isDefault = DEFAULT_CATEGORIES.some(c => c.key === categoryKey);
+    const name = getCategoryName(categoryKey);
+    if (isDefault) {
+      return `<span class="badge badge-${categoryKey}">${escapeHtml(name)}</span>`;
+    }
+    const color = getCategoryColor(categoryKey);
+    return `<span class="badge" style="background:${color}">${escapeHtml(name)}</span>`;
+  }
+
+  // Auth DOM
+  const authScreen   = document.getElementById('auth-screen');
+  const appContent   = document.getElementById('app-content');
+  const authEmail    = document.getElementById('auth-email');
   const authPassword = document.getElementById('auth-password');
-  const btnAuth = document.getElementById('btn-auth');
-  const authError = document.getElementById('auth-error');
+  const btnAuth      = document.getElementById('btn-auth');
+  const authError    = document.getElementById('auth-error');
   const authToggleText = document.getElementById('auth-toggle-text');
   const authToggleLink = document.getElementById('auth-toggle-link');
-  const btnLogout = document.getElementById('btn-logout');
-
-  const forgotLink = document.getElementById('forgot-password-link');
+  const btnLogout    = document.getElementById('btn-logout');
+  const forgotLink   = document.getElementById('forgot-password-link');
 
   let isRegistering = false;
-  let isForgotMode = false;
-  let currentUser = null;
+  let isForgotMode  = false;
+  let currentUser   = null;
 
   function updateAuthUI() {
     authError.textContent = '';
@@ -588,109 +406,68 @@
     }
   }
 
-  // --- Auth Toggle ---
   authToggleLink.addEventListener('click', () => {
-    if (isForgotMode) {
-      isForgotMode = false;
-      isRegistering = false;
-    } else {
-      isRegistering = !isRegistering;
-    }
+    if (isForgotMode) { isForgotMode = false; isRegistering = false; }
+    else { isRegistering = !isRegistering; }
     updateAuthUI();
   });
 
-  // --- Forgot Password ---
   forgotLink.addEventListener('click', () => {
     isForgotMode = true;
     isRegistering = false;
     updateAuthUI();
   });
 
-  // --- Auth Submit ---
   btnAuth.addEventListener('click', handleAuth);
-  authPassword.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleAuth();
-  });
-  authEmail.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleAuth();
-  });
+  authPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAuth(); });
+  authEmail.addEventListener('keydown',    (e) => { if (e.key === 'Enter') handleAuth(); });
 
   async function handleAuth() {
     const email = authEmail.value.trim();
     authError.textContent = '';
     authError.style.color = '';
 
-    // --- Forgot Password Mode ---
     if (isForgotMode) {
-      if (!email) {
-        authError.textContent = 'Bitte Email eingeben.';
-        return;
-      }
+      if (!email) { authError.textContent = 'Bitte Email eingeben.'; return; }
       btnAuth.disabled = true;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + window.location.pathname
       });
       btnAuth.disabled = false;
-      if (error) {
-        authError.textContent = error.message;
-        return;
-      }
+      if (error) { authError.textContent = error.message; return; }
       authError.style.color = 'var(--success)';
       authError.textContent = 'Reset-Link gesendet! Bitte prüfe dein Postfach.';
       return;
     }
 
-    // --- Login / Register ---
     const password = authPassword.value;
-
-    if (!email || !password) {
-      authError.textContent = 'Bitte Email und Passwort eingeben.';
-      return;
-    }
-
-    if (password.length < 6) {
-      authError.textContent = 'Passwort muss mindestens 6 Zeichen haben.';
-      return;
-    }
+    if (!email || !password) { authError.textContent = 'Bitte Email und Passwort eingeben.'; return; }
+    if (password.length < 6) { authError.textContent = 'Passwort muss mindestens 6 Zeichen haben.'; return; }
 
     btnAuth.disabled = true;
-
     let result;
     if (isRegistering) {
       result = await supabase.auth.signUp({ email, password });
     } else {
       result = await supabase.auth.signInWithPassword({ email, password });
     }
-
     btnAuth.disabled = false;
 
-    if (result.error) {
-      authError.textContent = result.error.message;
-      return;
-    }
-
+    if (result.error) { authError.textContent = result.error.message; return; }
     if (isRegistering && result.data?.user && !result.data.session) {
-      authError.textContent = '';
       authError.style.color = 'var(--success)';
       authError.textContent = 'Bestätigungs-Email gesendet! Bitte prüfe dein Postfach.';
-      return;
     }
   }
 
-  // --- Logout ---
-  btnLogout.addEventListener('click', async () => {
-    await supabase.auth.signOut();
-  });
+  btnLogout.addEventListener('click', async () => { await supabase.auth.signOut(); });
 
-  // --- Auth State Change ---
   function showApp(user) {
     currentUser = user;
     authScreen.classList.add('hidden');
     appContent.classList.remove('hidden');
-    if (!isConfigured) {
-      document.getElementById('config-banner').style.display = 'block';
-    }
-    loadTasks();
+    if (!isConfigured) { document.getElementById('config-banner').style.display = 'block'; }
+    loadCategories().then(() => loadTasks());
   }
 
   function showAuth() {
@@ -698,65 +475,219 @@
     appContent.classList.add('hidden');
     authScreen.classList.remove('hidden');
     tasks = [];
+    customCategories = [];
   }
 
   if (supabase) {
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        // User kam über den Reset-Link — neues Passwort setzen
         const newPw = prompt('Neues Passwort eingeben (min. 6 Zeichen):');
         if (newPw && newPw.length >= 6) {
           supabase.auth.updateUser({ password: newPw }).then(({ error }) => {
-            if (error) {
-              alert('Fehler: ' + error.message);
-            } else {
-              alert('Passwort erfolgreich geändert!');
-            }
+            if (error) { alert('Fehler: ' + error.message); }
+            else { alert('Passwort erfolgreich geändert!'); }
           });
         }
       }
-      if (session?.user) {
-        showApp(session.user);
-      } else {
-        showAuth();
-      }
+      if (session?.user) { showApp(session.user); } else { showAuth(); }
     });
-
-    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        showApp(session.user);
-      } else {
-        showAuth();
-      }
+      if (session?.user) { showApp(session.user); } else { showAuth(); }
     });
   } else {
-    // No supabase — show app in demo mode
     showApp(null);
   }
 
-  // --- App DOM ---
-  const taskInput = document.getElementById('task-input');
+  // App DOM
+  const taskInput      = document.getElementById('task-input');
   const categorySelect = document.getElementById('category-select');
-  const btnAdd = document.getElementById('btn-add');
-  const taskList = document.getElementById('task-list');
-  const statusEl = document.getElementById('status');
-  const filterBtns = document.querySelectorAll('.filter-btn');
+  const btnAdd         = document.getElementById('btn-add');
+  const taskList       = document.getElementById('task-list');
+  const statusEl       = document.getElementById('status');
+  const filterBar      = document.getElementById('filter-bar');
 
-  let tasks = [];
+  let tasks        = [];
   let activeFilter = 'all';
-  let sortable = null;
+  let sortable     = null;
 
-  // --- Status ---
   function setStatus(msg, isError) {
     statusEl.className = 'status' + (isError ? ' error' : '');
     statusEl.innerHTML = msg;
   }
 
-  // --- Render ---
+  // Filter bar (dynamic)
+  function renderFilterBar() {
+    const allCats = getAllCategories();
+    filterBar.innerHTML =
+      `<button class="filter-btn ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">Alle</button>` +
+      allCats.map(cat =>
+        `<button class="filter-btn ${activeFilter === cat.key ? 'active' : ''}" data-filter="${cat.key}">${escapeHtml(cat.name)}</button>`
+      ).join('') +
+      `<button class="filter-btn done-filter ${activeFilter === 'done' ? 'active' : ''}" data-filter="done">Erledigt</button>`;
+
+    filterBar.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter;
+        render();
+      });
+    });
+  }
+
+  // Category select (dynamic)
+  function renderCategorySelect() {
+    const allCats    = getAllCategories();
+    const currentVal = categorySelect.value;
+    categorySelect.innerHTML = allCats.map(cat =>
+      `<option value="${cat.key}">${escapeHtml(cat.name)}</option>`
+    ).join('');
+    if (allCats.find(c => c.key === currentVal)) {
+      categorySelect.value = currentVal;
+    }
+  }
+
+  // Load custom categories from Supabase
+  async function loadCategories() {
+    if (!supabase || !currentUser) {
+      renderFilterBar();
+      renderCategorySelect();
+      return;
+    }
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (!error) customCategories = data || [];
+    renderFilterBar();
+    renderCategorySelect();
+  }
+
+  // Category Modal
+  const modalOverlay = document.getElementById('cat-modal');
+  const btnOpenCat   = document.getElementById('btn-categories');
+  const btnCloseCat  = document.getElementById('btn-cat-modal-close');
+  const catNameInput = document.getElementById('cat-name-input');
+  const btnAddCat    = document.getElementById('btn-add-cat');
+  const catListEl    = document.getElementById('cat-list');
+  const catError     = document.getElementById('cat-error');
+
+  btnOpenCat.addEventListener('click', () => {
+    renderCatModal();
+    modalOverlay.classList.remove('hidden');
+  });
+  btnCloseCat.addEventListener('click', () => { modalOverlay.classList.add('hidden'); });
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) modalOverlay.classList.add('hidden');
+  });
+
+  function renderCatModal() {
+    catError.textContent = '';
+    renderColorSwatches();
+    renderCatList();
+  }
+
+  function renderColorSwatches() {
+    const container = document.getElementById('color-swatches');
+    container.innerHTML = PRESET_COLORS.map(color =>
+      `<div class="color-swatch ${color === selectedColor ? 'selected' : ''}"
+            data-color="${color}"
+            style="background:${color}"
+            title="${color}"></div>`
+    ).join('');
+    container.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        selectedColor = swatch.dataset.color;
+        container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        swatch.classList.add('selected');
+      });
+    });
+  }
+
+  function renderCatList() {
+    if (customCategories.length === 0) {
+      catListEl.innerHTML = '<div style="color:var(--text-dim);font-size:0.85rem">Noch keine eigenen Kategorien.</div>';
+      return;
+    }
+    catListEl.innerHTML = customCategories.map(cat => `
+      <div class="cat-item" data-id="${cat.id}">
+        <div class="cat-item-dot" style="background:${cat.color}"></div>
+        <span class="cat-item-name">${escapeHtml(cat.name)}</span>
+        <button class="btn-cat-delete" title="Löschen" data-id="${cat.id}">&times;</button>
+      </div>
+    `).join('');
+    catListEl.querySelectorAll('.btn-cat-delete').forEach(btn => {
+      btn.addEventListener('click', () => deleteCategory(btn.dataset.id));
+    });
+  }
+
+  async function addCategory() {
+    const name = catNameInput.value.trim();
+    catError.textContent = '';
+    if (!name) { catError.textContent = 'Bitte einen Namen eingeben.'; return; }
+
+    let key = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    if (!key) { catError.textContent = 'Ungültiger Name (nur Buchstaben, Zahlen, Leerzeichen).'; return; }
+
+    if (getAllCategories().find(c => c.key === key)) {
+      key = key + '_' + Date.now().toString(36);
+    }
+
+    btnAddCat.disabled = true;
+
+    if (!supabase) {
+      customCategories.push({ id: crypto.randomUUID(), name, key, color: selectedColor });
+      catNameInput.value = '';
+      renderCatModal();
+      renderFilterBar();
+      renderCategorySelect();
+      btnAddCat.disabled = false;
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({ name, key, color: selectedColor, user_id: currentUser.id })
+      .select()
+      .single();
+    btnAddCat.disabled = false;
+
+    if (error) { catError.textContent = 'Fehler: ' + error.message; return; }
+    customCategories.push(data);
+    catNameInput.value = '';
+    renderCatModal();
+    renderFilterBar();
+    renderCategorySelect();
+  }
+
+  async function deleteCategory(id) {
+    const cat = customCategories.find(c => c.id === id);
+    if (!cat) return;
+
+    customCategories = customCategories.filter(c => c.id !== id);
+    if (activeFilter === cat.key) activeFilter = 'all';
+
+    renderCatModal();
+    renderFilterBar();
+    renderCategorySelect();
+
+    if (!supabase) return;
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) {
+      customCategories.push(cat);
+      catError.textContent = 'Fehler beim Löschen: ' + error.message;
+      renderCatModal();
+      renderFilterBar();
+      renderCategorySelect();
+    }
+  }
+
+  btnAddCat.addEventListener('click', addCategory);
+  catNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addCategory(); });
+
+  // Task rendering
   function render() {
     const showDone = activeFilter === 'done';
-
     const filtered = tasks.filter(t => {
       if (showDone) return t.done === true;
       if (t.done) return false;
@@ -778,7 +709,7 @@
         }) : '';
         return `
           <div class="task-item done-item" data-id="${t.id}">
-            <span class="badge badge-${t.category}">${t.category}</span>
+            ${getBadgeHtml(t.category)}
             <span class="task-text">${escapeHtml(t.text)}</span>
             <span class="done-date">${doneDate}</span>
             <button class="btn-restore" title="Wiederherstellen" data-id="${t.id}">&#8634;</button>
@@ -790,14 +721,13 @@
       taskList.innerHTML = filtered.map(t => `
         <div class="task-item" data-id="${t.id}">
           <span class="drag-handle">&#x2630;</span>
-          <span class="badge badge-${t.category}">${t.category}</span>
+          ${getBadgeHtml(t.category)}
           <span class="task-text" data-id="${t.id}">${escapeHtml(t.text)}</span>
           <button class="btn-done" title="Erledigt" data-id="${t.id}">&#10003;</button>
           <button class="btn-delete" title="Löschen" data-id="${t.id}">&times;</button>
         </div>
       `).join('');
     }
-
     initSortable();
   }
 
@@ -807,10 +737,9 @@
     return d.innerHTML;
   }
 
-  // --- SortableJS ---
   function initSortable() {
     if (sortable) sortable.destroy();
-    if (activeFilter === 'done') return; // No sorting in done view
+    if (activeFilter === 'done') return;
     sortable = new Sortable(taskList, {
       animation: 180,
       handle: '.task-item',
@@ -825,10 +754,8 @@
 
   async function handleReorder(evt) {
     if (evt.oldIndex === evt.newIndex) return;
-
     const items = taskList.querySelectorAll('.task-item');
     const orderedIds = Array.from(items).map(el => el.dataset.id);
-
     const taskMap = new Map(tasks.map(t => [t.id, t]));
     const reordered = orderedIds.map(id => taskMap.get(id)).filter(Boolean);
 
@@ -838,15 +765,12 @@
     } else {
       tasks = reordered;
     }
-
     tasks.forEach((t, i) => t.sort_order = i);
 
     if (!supabase) return;
-
     try {
-      const updates = reordered.map((t, i) => ({ id: t.id, sort_order: t.sort_order }));
-      for (const u of updates) {
-        await supabase.from('tasks').update({ sort_order: u.sort_order }).eq('id', u.id);
+      for (const t of reordered) {
+        await supabase.from('tasks').update({ sort_order: t.sort_order }).eq('id', t.id);
       }
       setStatus('Reihenfolge gespeichert', false);
     } catch (err) {
@@ -854,18 +778,16 @@
     }
   }
 
-  // --- Inline Edit ---
   function startEdit(taskTextEl) {
     const taskId = taskTextEl.dataset.id;
     const task = tasks.find(t => t.id === taskId);
     if (!task || task.done) return;
-
     const currentText = task.text;
+
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'task-edit-input';
     input.value = currentText;
-
     taskTextEl.replaceWith(input);
     input.focus();
     input.select();
@@ -876,21 +798,14 @@
       if (saved) return;
       saved = true;
       const newText = input.value.trim();
-      if (!newText || newText === currentText) {
-        cancelEdit();
-        return;
-      }
-
+      if (!newText || newText === currentText) { cancelEdit(); return; }
       task.text = newText;
-
       const span = document.createElement('span');
       span.className = 'task-text';
       span.dataset.id = taskId;
       span.textContent = newText;
       input.replaceWith(span);
-
       if (!supabase) return;
-
       const { error } = await supabase.from('tasks').update({ text: newText }).eq('id', taskId);
       if (error) {
         setStatus('Fehler beim Speichern: ' + error.message, true);
@@ -911,37 +826,19 @@
 
     input.addEventListener('blur', save);
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        input.blur();
-      }
-      if (e.key === 'Escape') {
-        saved = true;
-        cancelEdit();
-      }
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { saved = true; cancelEdit(); }
     });
   }
 
-  // --- CRUD ---
   async function loadTasks() {
-    if (!supabase) {
-      tasks = [];
-      render();
-      return;
-    }
-
+    if (!supabase) { tasks = []; render(); return; }
     setStatus('<span class="spinner"></span> Laden...', false);
-
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .order('sort_order', { ascending: true });
-
-    if (error) {
-      setStatus('Fehler beim Laden: ' + error.message, true);
-      return;
-    }
-
+    if (error) { setStatus('Fehler beim Laden: ' + error.message, true); return; }
     tasks = data || [];
     render();
     setStatus('', false);
@@ -950,21 +847,13 @@
   async function addTask() {
     const text = taskInput.value.trim();
     if (!text) return;
-
     const category = categorySelect.value;
-
-    // Alle bestehenden Tasks um 1 nach unten schieben
     tasks.forEach(t => t.sort_order = (t.sort_order || 0) + 1);
 
     if (!supabase) {
       tasks.unshift({
-        id: crypto.randomUUID(),
-        text,
-        category,
-        sort_order: 0,
-        done: false,
-        done_at: null,
-        created_at: new Date().toISOString()
+        id: crypto.randomUUID(), text, category,
+        sort_order: 0, done: false, done_at: null, created_at: new Date().toISOString()
       });
       taskInput.value = '';
       render();
@@ -972,33 +861,17 @@
     }
 
     btnAdd.disabled = true;
-
-    // sort_order der bestehenden Tasks in DB aktualisieren
     for (const t of tasks) {
       await supabase.from('tasks').update({ sort_order: t.sort_order }).eq('id', t.id);
     }
-
-    const insertData = {
-      text,
-      category,
-      sort_order: 0,
-      user_id: currentUser.id
-    };
-
     const { data, error } = await supabase
       .from('tasks')
-      .insert(insertData)
+      .insert({ text, category, sort_order: 0, user_id: currentUser.id })
       .select()
       .single();
-
     btnAdd.disabled = false;
 
-    if (error) {
-      setStatus('Fehler beim Erstellen: ' + error.message, true);
-      loadTasks();
-      return;
-    }
-
+    if (error) { setStatus('Fehler beim Erstellen: ' + error.message, true); loadTasks(); return; }
     tasks.unshift(data);
     taskInput.value = '';
     render();
@@ -1008,92 +881,49 @@
   async function deleteTask(id) {
     tasks = tasks.filter(t => t.id !== id);
     render();
-
     if (!supabase) return;
-
     const { error } = await supabase.from('tasks').delete().eq('id', id);
-    if (error) {
-      setStatus('Fehler beim Löschen: ' + error.message, true);
-      loadTasks();
-    } else {
-      setStatus('Task gelöscht', false);
-    }
+    if (error) { setStatus('Fehler beim Löschen: ' + error.message, true); loadTasks(); }
+    else { setStatus('Task gelöscht', false); }
   }
 
   async function markDone(id) {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
-
     const now = new Date().toISOString();
     task.done = true;
     task.done_at = now;
     render();
-
     if (!supabase) return;
-
     const { error } = await supabase.from('tasks').update({ done: true, done_at: now }).eq('id', id);
-    if (error) {
-      setStatus('Fehler beim Markieren: ' + error.message, true);
-      loadTasks();
-    } else {
-      setStatus('Task erledigt', false);
-    }
+    if (error) { setStatus('Fehler beim Markieren: ' + error.message, true); loadTasks(); }
+    else { setStatus('Task erledigt', false); }
   }
 
   async function restoreTask(id) {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
-
     task.done = false;
     task.done_at = null;
     render();
-
     if (!supabase) return;
-
     const { error } = await supabase.from('tasks').update({ done: false, done_at: null }).eq('id', id);
-    if (error) {
-      setStatus('Fehler beim Wiederherstellen: ' + error.message, true);
-      loadTasks();
-    } else {
-      setStatus('Task wiederhergestellt', false);
-    }
+    if (error) { setStatus('Fehler beim Wiederherstellen: ' + error.message, true); loadTasks(); }
+    else { setStatus('Task wiederhergestellt', false); }
   }
 
-  // --- Events ---
   btnAdd.addEventListener('click', addTask);
-
-  taskInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addTask();
-  });
+  taskInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addTask(); });
 
   taskList.addEventListener('click', (e) => {
-    // Delete
     const btnDel = e.target.closest('.btn-delete');
     if (btnDel) { deleteTask(btnDel.dataset.id); return; }
-
-    // Done
     const btnDn = e.target.closest('.btn-done');
     if (btnDn) { markDone(btnDn.dataset.id); return; }
-
-    // Restore
     const btnRes = e.target.closest('.btn-restore');
     if (btnRes) { restoreTask(btnRes.dataset.id); return; }
-
-    // Inline Edit
     const taskText = e.target.closest('.task-text');
-    if (taskText && !taskText.closest('.done-item')) {
-      startEdit(taskText);
-      return;
-    }
-  });
-
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeFilter = btn.dataset.filter;
-      render();
-    });
+    if (taskText && !taskText.closest('.done-item')) { startEdit(taskText); return; }
   });
 })();
 </script>
